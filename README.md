@@ -12,7 +12,7 @@
 <img src="https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/demo.gif" alt="Demo" width="600">
 
 
-## 中文
+</div>
 
 ### ✨ 功能特点
 
