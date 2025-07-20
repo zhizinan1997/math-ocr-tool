@@ -12,6 +12,7 @@
 <img src="https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/demo.gif" alt="Demo" width="600">
 
 </div>
+
 ### ✨ 功能特点
 
 - 🤖 **AI智能识别** - 使用先进的AI模型精准识别数学公式
