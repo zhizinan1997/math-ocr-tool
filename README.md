@@ -41,9 +41,9 @@ curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/dep
 docker run -d \
     --name math-ocr-tool \
     -p 5000:5000 \
-    -e OPENAI_API_KEY="你的API密钥" \
-    -e OPENAI_API_BASE="API地址" \
-    -e OPENAI_MODEL="模型名称" \
+    -e OPENAI_API_KEY="你的API密钥 sk-xxxxxxxxxxxxxxxxx" \
+    -e OPENAI_API_BASE="API地址 https://xx.xxx.xxx/v1" \
+    -e OPENAI_MODEL="模型名称 gpt-4o" \
     --restart unless-stopped \
     zhizinan1997/math-ocr-tool:latest
 ```
@@ -224,9 +224,9 @@ curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/dep
 docker run -d \
     --name math-ocr-tool \
     -p 5000:5000 \
-    -e OPENAI_API_KEY="your-api-key" \
-    -e OPENAI_API_BASE="api-base-url" \
-    -e OPENAI_MODEL="model-name" \
+    -e OPENAI_API_KEY="your-api-key sk-xxxxxxxxx" \
+    -e OPENAI_API_BASE="api-base-url https://xx.xxx.com/v1" \
+    -e OPENAI_MODEL="model-name gpt-4o" \
     --restart unless-stopped \
     zhizinan1997/math-ocr-tool:latest
 ```
