@@ -3,8 +3,8 @@
 ## 环境变量配置
 
 ### API配置
-- `OPENAI_API_KEY`: sk-w4eyFPGlmIRm1gZBZeyfXKGX6dIL7iy2LAe0j6fw4Ws3aXDM
-- `OPENAI_API_BASE`: API基础地址（默认: https://newapi2.zhizinan.top/v1）
+- `OPENAI_API_KEY`: sk-xxxxxxxx
+- `OPENAI_API_BASE`: API基础地址（默认: https://xxxxxx.com/v1）
 - `OPENAI_MODEL`: 使用的模型名称（默认: gemini-2.5-flash-lite-preview-06-17）
 
 ### 模型参数配置
