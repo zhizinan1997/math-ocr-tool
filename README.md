@@ -32,7 +32,7 @@
 #### 方式1：使用一键部署脚本（推荐）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/deploy.sh -o deploy.sh && chmod +x deploy.sh && ./deploy.sh
 ```
 
 #### 方式2：使用Docker命令
