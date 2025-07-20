@@ -11,9 +11,11 @@
 
 <img src="https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/demo.gif" alt="Demo" width="600">
 
-</div>
+
 ## 中文
+
 ### ✨ 功能特点
+
 - 🤖 **AI智能识别** - 使用先进的AI模型精准识别数学公式
 - 📸 **多种上传方式** - 支持拖拽上传、点击选择、粘贴截图(Ctrl+V)
 - 🎯 **高识别准确率** - 支持复杂数学公式，包括分数、积分、矩阵等
@@ -21,8 +23,7 @@
 - 🔍 **实时预览** - MathJax实时渲染LaTeX公式预览
 - 📱 **响应式设计** - 完美支持PC和移动设备
 - 🚀 **一键部署** - Docker容器化，部署简单快捷
-- 🔧 **灵活配置** - 支持自定义OpenAI格式API服务商和模型
-
+- 🔧 **灵活配置** - 支持自定义API服务商和模型
 
   ![网页捕获_20-7-2025_151448_103 242 3 76](https://github.com/user-attachments/assets/9f09f17d-6019-4e2a-b0d5-072f2a18c60e)
 
