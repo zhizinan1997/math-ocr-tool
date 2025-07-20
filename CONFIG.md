@@ -20,10 +20,3 @@
 - `MAX_CONTENT_LENGTH`: 最大上传文件大小（字节）
 - `UPLOAD_FOLDER`: 上传文件目录
 
-## 常用配置示例
-
-### NewAPI2服务配置
-```env
-OPENAI_API_KEY=sk-w4eyFPGlmIRm1gZBZeyfXKGX6dIL7iy2LAe0j6fw4Ws3aXDM
-OPENAI_API_BASE=https://newapi2.zhizinan.top/v1
-OPENAI_MODEL=gemini-2.5-flash-lite-preview-06-17
