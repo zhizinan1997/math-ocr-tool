@@ -215,7 +215,7 @@ python app.py
 #### Option 1: One-Click Deploy Script (Recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/deploy.sh -o deploy.sh && chmod +x deploy.sh && ./deploy.sh
 ```
 
 #### Option 2: Docker Command
@@ -228,7 +228,7 @@ docker run -d \
     -e OPENAI_API_BASE="api-base-url https://xx.xxx.com/v1" \
     -e OPENAI_MODEL="model-name gpt-4o" \
     --restart unless-stopped \
-    zhizinan1997/math-ocr-tool:latest
+    ryanzhi1997/math-ocr-tool:latest
 ```
 
 #### Option 3: Docker Compose
@@ -240,7 +240,7 @@ version: '3.8'
 
 services:
   math-ocr-tool:
-    image: zhizinan1997/math-ocr-tool:latest
+    image: ryanzhi1997/math-ocr-tool:latest
     container_name: math-ocr-tool
     ports:
       - "5000:5000"
