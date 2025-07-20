@@ -2,16 +2,12 @@
 # 📐 数学公式图片转LaTeX工具 | Math Formula OCR Tool
 
 <div align="center">
-
-[![Docker Pulls](https://img.shields.io/docker/pulls/zhizinan1997/math-ocr-tool.svg)](https://hub.docker.com/r/zhizinan1997/math-ocr-tool)
-[![GitHub Stars](https://img.shields.io/github/stars/zhizinan1997/math-ocr-tool.svg)](https://github.com/zhizinan1997/math-ocr-tool/stargazers)
+[![Docker Pulls](https://img.shields.io/docker/pulls/ryanzhi1997/math-ocr-tool.svg)](https://hub.docker.com/r/ryanzhi1997/math-ocr-tool)
+[![GitHub Stars](https://img.shields.io/github/stars/ryanzhi1997/math-ocr-tool.svg)](https://github.com/ryanzhi1997/math-ocr-tool/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker Image Size](https://img.shields.io/docker/image-size/zhizinan1997/math-ocr-tool)](https://hub.docker.com/r/zhizinan1997/math-ocr-tool)
-
+[![Docker Image Size](https://img.shields.io/docker/image-size/ryanzhi1997/math-ocr-tool)](https://hub.docker.com/r/ryanzhi1997/math-ocr-tool)
 [English](#english) | [中文](#中文)
-
-<img src="https://raw.githubusercontent.com/zhizinan1997/math-ocr-tool/main/demo.gif" alt="Demo" width="600">
-
+<img src="https://raw.githubusercontent.com/ryanzhi1997/math-ocr-tool/main/demo.gif" alt="Demo" width="600">
 </div>
 
 ## 中文
