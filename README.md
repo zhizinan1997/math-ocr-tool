@@ -1,22 +1,17 @@
-# 数学公式图片转LaTeX工具
+# 📐 数学公式图片转LaTeX工具
 
-一个基于AI的数学公式识别工具，支持将截图或图片中的数学公式转换为LaTeX代码，可直接在Word中使用。
+[![Docker Pulls](https://img.shields.io/docker/pulls/zhizinan/math-ocr-tool.svg)](https://hub.docker.com/r/zhizinan/math-ocr-tool)
+[![GitHub Stars](https://img.shields.io/github/stars/zhizinan/math-ocr-tool.svg)](https://github.com/zhizinan/math-ocr-tool/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 功能特点
+AI驱动的数学公式识别转换工具，支持图片上传、粘贴截图，一键转换为LaTeX代码。
 
-- 🖼️ 支持多种图片格式上传
-- 📋 支持粘贴截图功能
-- 🤖 支持OpenAI GPT-4V和Claude 3两种AI服务
-- 📝 自动生成可用于Word的LaTeX代码
-- 👀 实时LaTeX预览
-- 📥 一键复制和下载结果
+![Screenshot](https://raw.githubusercontent.com/zhizinan/math-ocr-tool/main/screenshot.png) <!-- 你需要上传一张截图到GitHub -->
 
-## 快速开始
+## 🚀 一键部署
 
-### 1. 环境要求
-- Python 3.8+
-- 现代浏览器
+### 方式1：使用一键部署脚本（推荐）
 
-### 2. 安装依赖
 ```bash
-pip install -r requirements.txt# math-ocr-tool
+# 下载并运行部署脚本
+curl -fsSL https://raw.githubusercontent.com/zhizinan/math-ocr-tool/main/deploy.sh | bash
