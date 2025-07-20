@@ -6,7 +6,9 @@
 
 AI驱动的数学公式识别转换工具，支持图片上传、粘贴截图，一键转换为LaTeX代码。
 
-![Screenshot](https://raw.githubusercontent.com/zhizinan/math-ocr-tool/main/screenshot.png) <!-- 你需要上传一张截图到GitHub -->
+![网页捕获_20-7-2025_151448_103 242 3 76](https://github.com/user-attachments/assets/88895740-d7de-4054-a5c7-03947143d80f)
+
+
 
 ## 🚀 一键部署
 
