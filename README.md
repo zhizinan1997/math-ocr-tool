@@ -321,28 +321,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Made with ❤️ by <a href="https://github.com/zhizinan1997">zhizinan1997</a>
 </div>
 ```
-
-这个 README.md 文件包含了：
-
-1. **双语支持** - 中英文说明
-2. **徽章展示** - Docker下载量、GitHub星标等
-3. **功能特点** - 清晰列出所有功能
-4. **多种部署方式** - 适合不同用户需求
-5. **详细配置说明** - 包括必填和可选配置
-6. **使用指南** - 步骤清晰
-7. **故障排除** - 常见问题解决
-8. **本地开发指南** - 方便贡献者
-9. **贡献指南** - 鼓励社区参与
-10. **致谢部分** - 感谢使用的开源项目
-
-你可能还需要：
-1. 上传一个 demo.gif 演示动画到仓库
-2. 上传一些截图到 screenshots 文件夹
-3. 根据实际情况调整 Docker Hub 的用户名和仓库名
-
-有什么需要调整的地方吗？
-
-—————————请注意—————————
-⭐️Ryan AI的内容未必全部正确，请务必仔细核实⭐️
-https://chat.zhizinan.top
-—————————请注意—————————
