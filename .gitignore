@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Log and data files
+*.log
+*.sqlite
+uploads/*
+!uploads/.gitkeep
+conversion_stats.txt
+
+# Environment variables
+.env

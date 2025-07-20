@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  math-latex-converter:
+    build: .
+    # image: zhizinan/math-latex-converter:latest  # 如果使用预构建镜像
+    container_name: math-latex-converter
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      # API配置 - 用户必须设置
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      
+      # 模型参数配置 - 可选
+      - MODEL_MAX_TOKENS=${MODEL_MAX_TOKENS:-1000}
+      - MODEL_TEMPERATURE=${MODEL_TEMPERATURE:-0.1}
+      
+      # 图片处理配置 - 可选  
+      - IMAGE_MAX_SIZE=${IMAGE_MAX_SIZE:-1024}
+      - IMAGE_QUALITY=${IMAGE_QUALITY:-85}
+      
+      # 应用配置 - 可选
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAX_CONTENT_LENGTH=${MAX_CONTENT_LENGTH:-16777216}
+    restart: unless-stopped
+    volumes:
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
