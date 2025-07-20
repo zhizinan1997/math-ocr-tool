@@ -19,4 +19,4 @@
 
 ### 2. 安装依赖
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt# math-ocr-tool
