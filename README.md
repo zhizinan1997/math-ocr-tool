@@ -45,7 +45,7 @@ docker run -d \
     -e OPENAI_API_BASE="API地址 https://xx.xxx.xxx/v1" \
     -e OPENAI_MODEL="模型名称 gpt-4o" \
     --restart unless-stopped \
-    zhizinan1997/math-ocr-tool:latest
+    ryanzhi1997/math-ocr-tool:latest
 ```
 
 #### 方式3：使用docker-compose
@@ -57,7 +57,7 @@ version: '3.8'
 
 services:
   math-ocr-tool:
-    image: zhizinan1997/math-ocr-tool:latest
+    image: ryanzhi1997/math-ocr-tool:latest
     container_name: math-ocr-tool
     ports:
       - "5000:5000"
