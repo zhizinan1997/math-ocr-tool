@@ -24,7 +24,8 @@
 - 🚀 **一键部署** - Docker容器化，部署简单快捷
 - 🔧 **灵活配置** - 支持自定义API服务商和模型
 
-  ![网页捕获_20-7-2025_151448_103 242 3 76](https://github.com/user-attachments/assets/9f09f17d-6019-4e2a-b0d5-072f2a18c60e)
+<img width="261" height="287" alt="image" src="https://github.com/user-attachments/assets/1e985179-230d-4e5b-8fbd-c0407ef0a39c" />
+
 
 
 ### 🚀 快速开始
