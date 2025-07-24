@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学公式图片转LaTeX</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-section">
+                <a href="/" class="logo-link">
+                    <img src="/static/logo.png" alt="LaTeX Logo" class="logo-img">
+                </a>
+                <div class="title-section">
+                    <h1>数学公式图片转LaTeX</h1>
+                    <p>AI驱动的数学公式识别转换工具</p>
+                </div>
+            </div>
+            <div class="stats-section">
+                <span class="conversion-count">服务总转换次数：<span id="totalCount">{{ total_conversions }}</span></span>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- 简化的使用说明 -->
+            <div class="simple-instructions">
+                <h3>💡 使用方法</h3>
+                <p>
+                 1. 上传数学公式图片或直接粘贴截图（Ctrl+V）<br>
+                 2. 点击转换按钮，AI自动识别并生成LaTeX代码<br>
+                 3. 在Office软件中按 <strong>Alt</strong>和<strong>=</strong>，菜单栏选择LaTeX公式，键入代码按回车
+                </p>
+            </div>
+
+            <!-- 图片上传区域 -->
+            <div class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📷</div>
+                            <h3>拖拽或点击上传图片</h3>
+                            <p class="upload-hint">支持 PNG, JPG, JPEG, GIF, BMP, WebP 格式，最大16MB</p>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    </div>
+                    
+                    <!-- 预览区域 -->
+                    <div class="preview-section" id="previewSection" style="display: none;">
+                        <div class="preview-header">
+                            <h3>图片预览</h3>
+                        </div>
+                        <div class="preview-container">
+                            <img id="previewImage" src="" alt="预览">
+                        </div>
+                        <!-- 按钮放在图片预览下方 -->
+                        <div class="preview-actions">
+                            <button class="btn-primary" id="convertBtn" disabled>
+                                <span class="btn-icon">🚀</span>
+                                <span class="btn-text">开始转换</span>
+                                <span class="loading" style="display: none;">转换中...</span>
+                            </button>
+                            <button class="btn-danger" id="clearBtn">
+                                <span class="btn-icon">🗑️</span>
+                                清除图片
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 结果显示区域 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h3>✨ 转换结果</h3>
+                    </div>
+                    <div class="result-container">
+                        <div class="textarea-container">
+                            <label class="textarea-label">LaTeX 代码</label>
+                            <textarea id="latexResult" readonly placeholder="LaTeX代码将显示在这里..."></textarea>
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn-secondary" id="copyBtn">
+                                <span class="btn-icon">📋</span>
+                                复制代码
+                            </button>
+                            <button class="btn-secondary" id="downloadBtn">
+                                <span class="btn-icon">📄</span>
+                                下载文本
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- LaTeX预览 -->
+                    <div class="preview-latex">
+                        <h4>🔍 公式预览</h4>
+                        <div class="math-preview-container">
+                            <div id="mathPreview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 错误消息 -->
+            <div class="error-message" id="errorMessage" style="display: none;"></div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer>
+            <p>Powered by Ryan • Github开源 zhizinan1997/math-ocr-tool</p>
+        </footer>
+    </div>
+
+    <!-- MathJax for LaTeX preview -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
