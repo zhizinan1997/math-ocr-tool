@@ -24,7 +24,8 @@
 - 🚀 **一键部署** - Docker容器化，部署简单快捷
 - 🔧 **灵活配置** - 支持自定义API服务商和模型
 
-<img width="261" height="287" alt="image" src="https://github.com/user-attachments/assets/1e985179-230d-4e5b-8fbd-c0407ef0a39c" />
+<img width="2263" height="2284" alt="数学公式图片转LaTeX" src="https://github.com/user-attachments/assets/cd728b88-3144-4758-b508-b732868b8efa" />
+
 
 
 
