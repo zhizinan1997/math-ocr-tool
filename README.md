@@ -64,7 +64,7 @@ docker run -d \
     -e OPENAI_API_BASE="https://api.openai.com/v1" \
     -e OPENAI_MODEL="gpt-4o" \
     --restart unless-stopped \
-    ryanzhi1997/math-ocr-tool:latest
+    ryanzhi1997/math-ocr-tool:v0.0.2
 ```
 
 ### 方式三：Docker Compose
@@ -76,7 +76,7 @@ version: '3.8'
 
 services:
   math-ocr-tool:
-    image: ryanzhi1997/math-ocr-tool:latest
+    image: ryanzhi1997/math-ocr-tool:v0.0.2
     container_name: math-ocr-tool
     ports:
       - "5000:5000"
@@ -273,7 +273,7 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
     -e DB_HOST="your-db-host" \
     -e DB_PASSWORD="your-db-password" \
     -e OPENAI_API_KEY="your-api-key" \
-    ryanzhi1997/math-ocr-tool:latest
+    ryanzhi1997/math-ocr-tool:v0.0.2
 ```
 
 ### Features
