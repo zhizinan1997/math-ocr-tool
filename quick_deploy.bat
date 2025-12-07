@@ -1,290 +1,262 @@
 @echo off
-chcp 65001 >nul
 setlocal EnableDelayedExpansion
 
 :: ============================================================
-:: Math OCR Tool - 一键部署脚本 (Windows)
-:: 功能：从GitHub克隆项目，配置环境，构建并部署Docker容器
-:: 作者：Ryan / zhizinan1997
-:: 仓库：https://github.com/zhizinan1997/math-ocr-tool.git
+:: Math OCR Tool - Quick Deploy Script (Windows)
+:: Repository: https://github.com/zhizinan1997/math-ocr-tool.git
 :: ============================================================
 
-:: ==================== 欢迎信息 ====================
 cls
 echo.
-echo ╔════════════════════════════════════════════════════════════╗
-echo ║                                                            ║
-echo ║        📐 Math OCR Tool - 一键部署脚本                     ║
-echo ║        数学公式图片转LaTeX工具                              ║
-echo ║                                                            ║
-echo ║        GitHub: zhizinan1997/math-ocr-tool                  ║
-echo ║                                                            ║
-echo ╚════════════════════════════════════════════════════════════╝
-echo.
-
-:: ==================== 环境检查 ====================
 echo ========================================
-echo Step 1: 环境检查
+echo   Math OCR Tool - Quick Deploy
+echo   GitHub: zhizinan1997/math-ocr-tool
 echo ========================================
 echo.
 
-:: 检查 Git 是否安装
-echo [INFO] 检查 Git 是否已安装...
+:: Check Git
+echo [INFO] Checking Git installation...
 where git >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Git 未安装！请先安装 Git
-    echo   下载地址: https://git-scm.com/download/win
+    echo [ERROR] Git not installed! Please install Git first.
+    echo   Download: https://git-scm.com/download/win
     pause
     exit /b 1
 )
-for /f "tokens=*" %%i in ('git --version') do echo [SUCCESS] %%i
+echo [SUCCESS] Git is installed
 echo.
 
-:: 检查 Docker 是否安装
-echo [INFO] 检查 Docker 是否已安装...
+:: Check Docker
+echo [INFO] Checking Docker installation...
 where docker >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Docker 未安装！请先安装 Docker Desktop
-    echo   下载地址: https://www.docker.com/products/docker-desktop
+    echo [ERROR] Docker not installed! Please install Docker Desktop.
+    echo   Download: https://www.docker.com/products/docker-desktop
     pause
     exit /b 1
 )
-for /f "tokens=*" %%i in ('docker --version') do echo [SUCCESS] %%i
+echo [SUCCESS] Docker is installed
 echo.
 
-:: 检查 Docker 服务是否运行
-echo [INFO] 检查 Docker 服务状态...
+:: Check Docker service
+echo [INFO] Checking Docker service...
 docker info >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Docker 服务未运行！请启动 Docker Desktop
+    echo [ERROR] Docker service not running! Please start Docker Desktop.
     pause
     exit /b 1
 )
-echo [SUCCESS] Docker 服务正在运行
+echo [SUCCESS] Docker service is running
 echo.
 
-:: ==================== 设置工作目录 ====================
-echo ========================================
-echo Step 2: 设置工作目录
-echo ========================================
-echo.
-
+:: Set installation directory
 set "INSTALL_DIR=%USERPROFILE%\math-ocr-tool"
-echo [INFO] 默认安装目录: %INSTALL_DIR%
-set /p USE_DEFAULT="是否使用此目录? (y/n，直接回车使用默认): "
+echo [INFO] Default installation directory: %INSTALL_DIR%
+set /p USE_DEFAULT="Use this directory? (y/n, press Enter for default): "
 
 if /i "!USE_DEFAULT!"=="n" (
-    set /p INSTALL_DIR="请输入安装目录: "
+    set /p INSTALL_DIR="Enter installation directory: "
 )
 
-echo [INFO] 安装目录: %INSTALL_DIR%
+echo [INFO] Installation directory: %INSTALL_DIR%
 echo.
 
-:: ==================== 克隆项目 ====================
-echo ========================================
-echo Step 3: 克隆项目代码
-echo ========================================
-echo.
-
+:: Clone repository
 set "REPO_URL=https://github.com/zhizinan1997/math-ocr-tool.git"
 
 if exist "%INSTALL_DIR%" (
-    echo [WARNING] 目录已存在: %INSTALL_DIR%
-    set /p RECLONE="是否删除并重新克隆? (y/n): "
+    echo [WARNING] Directory already exists: %INSTALL_DIR%
+    set /p RECLONE="Delete and re-clone? (y/n): "
     if /i "!RECLONE!"=="y" (
-        echo [INFO] 删除现有目录...
+        echo [INFO] Deleting existing directory...
         rmdir /s /q "%INSTALL_DIR%"
     ) else (
-        echo [INFO] 使用现有目录，拉取最新代码...
+        echo [INFO] Using existing directory, pulling latest code...
         cd /d "%INSTALL_DIR%"
         git pull origin main 2>nul || git pull origin master
     )
 )
 
 if not exist "%INSTALL_DIR%" (
-    echo [INFO] 正在从 GitHub 克隆项目...
+    echo [INFO] Cloning from GitHub...
     git clone "%REPO_URL%" "%INSTALL_DIR%"
     if %ERRORLEVEL% NEQ 0 (
-        echo [ERROR] 克隆失败！请检查网络连接
+        echo [ERROR] Clone failed! Please check network connection.
         pause
         exit /b 1
     )
-    echo [SUCCESS] 项目克隆完成
+    echo [SUCCESS] Project cloned
 )
 
 cd /d "%INSTALL_DIR%"
-echo [SUCCESS] 当前工作目录: %CD%
+echo [SUCCESS] Current directory: %CD%
 echo.
 
-:: ==================== 配置数据库 ====================
+:: Configure Database
 echo ========================================
-echo Step 4: 配置数据库连接
+echo Database Configuration
 echo ========================================
 echo.
-echo 请输入 PostgreSQL 数据库连接信息:
+echo Enter PostgreSQL database connection info:
 echo.
 
-set /p DB_HOST="数据库主机地址 (默认: localhost): "
+set /p DB_HOST="Database host (default: localhost): "
 if "!DB_HOST!"=="" set "DB_HOST=localhost"
 
-set /p DB_PORT="数据库端口 (默认: 5432): "
+set /p DB_PORT="Database port (default: 5432): "
 if "!DB_PORT!"=="" set "DB_PORT=5432"
 
-set /p DB_NAME="数据库名称 (默认: postgres): "
+set /p DB_NAME="Database name (default: postgres): "
 if "!DB_NAME!"=="" set "DB_NAME=postgres"
 
-set /p DB_USER="数据库用户名 (默认: postgres): "
+set /p DB_USER="Database user (default: postgres): "
 if "!DB_USER!"=="" set "DB_USER=postgres"
 
-set /p DB_PASSWORD="数据库密码 (必填): "
+set /p DB_PASSWORD="Database password (required): "
 if "!DB_PASSWORD!"=="" (
-    echo [ERROR] 数据库密码不能为空！
+    echo [ERROR] Database password cannot be empty!
     pause
     exit /b 1
 )
 
-echo [SUCCESS] 数据库配置完成
+echo [SUCCESS] Database configured
 echo.
 
-:: ==================== 配置 AI API ====================
+:: Configure AI API
 echo ========================================
-echo Step 5: 配置 AI API
+echo AI API Configuration
 echo ========================================
 echo.
-echo 请输入 AI API 配置信息:
-echo 提示: 支持 OpenAI 及兼容接口
+echo Enter AI API configuration:
+echo Note: Supports OpenAI and compatible APIs
 echo.
 
-set /p OPENAI_API_BASE="API 地址 (默认: https://api.openai.com/v1): "
+set /p OPENAI_API_BASE="API base URL (default: https://api.openai.com/v1): "
 if "!OPENAI_API_BASE!"=="" set "OPENAI_API_BASE=https://api.openai.com/v1"
 
-set /p OPENAI_API_KEY="API 密钥 (必填): "
+set /p OPENAI_API_KEY="API key (required): "
 if "!OPENAI_API_KEY!"=="" (
-    echo [ERROR] API 密钥不能为空！
+    echo [ERROR] API key cannot be empty!
     pause
     exit /b 1
 )
 
-set /p OPENAI_MODEL="模型名称 (默认: gpt-4o): "
+set /p OPENAI_MODEL="Model name (default: gpt-4o): "
 if "!OPENAI_MODEL!"=="" set "OPENAI_MODEL=gpt-4o"
 
-echo [SUCCESS] AI API 配置完成
+echo [SUCCESS] AI API configured
 echo.
 
-:: ==================== 端口配置 ====================
+:: Configure Port
 echo ========================================
-echo Step 6: 配置服务端口
+echo Port Configuration
 echo ========================================
 echo.
 
-set /p PORT="服务端口 (默认: 5000): "
+set /p PORT="Service port (default: 5000): "
 if "!PORT!"=="" set "PORT=5000"
 
-echo [INFO] 服务将运行在端口: !PORT!
+echo [INFO] Service will run on port: !PORT!
 echo.
 
-:: ==================== 生成环境变量文件 ====================
+:: Generate .env file
 echo ========================================
-echo Step 7: 生成配置文件
+echo Generating Configuration File
 echo ========================================
 echo.
 
-echo [INFO] 正在生成 .env 文件...
+echo [INFO] Creating .env file...
 
 (
-echo # Math OCR Tool 环境配置文件
-echo # 自动生成于: %DATE% %TIME%
+echo # Math OCR Tool Environment Configuration
+echo # Generated: %DATE% %TIME%
 echo.
-echo # 数据库配置
+echo # Database Configuration
 echo DB_HOST=!DB_HOST!
 echo DB_PORT=!DB_PORT!
 echo DB_NAME=!DB_NAME!
 echo DB_USER=!DB_USER!
 echo DB_PASSWORD=!DB_PASSWORD!
 echo.
-echo # AI API 配置
+echo # AI API Configuration
 echo OPENAI_API_KEY=!OPENAI_API_KEY!
 echo OPENAI_API_BASE=!OPENAI_API_BASE!
 echo OPENAI_MODEL=!OPENAI_MODEL!
 echo.
-echo # 应用配置
+echo # Application Configuration
 echo PORT=!PORT!
 echo LOG_LEVEL=INFO
 ) > .env
 
-echo [SUCCESS] .env 文件已生成
+echo [SUCCESS] .env file created
 echo.
 
-:: ==================== 配置预览 ====================
+:: Configuration Preview
 echo ========================================
-echo Step 8: 配置预览
+echo Configuration Preview
 echo ========================================
 echo.
-echo ┌─────────────────────────────────────────────────┐
-echo │              配置信息预览                        │
-echo ├─────────────────────────────────────────────────┤
-echo │ 数据库主机:    !DB_HOST!
-echo │ 数据库端口:    !DB_PORT!
-echo │ 数据库名称:    !DB_NAME!
-echo │ 数据库用户:    !DB_USER!
-echo │ 数据库密码:    ********
-echo │ API 地址:      !OPENAI_API_BASE!
-echo │ API 密钥:      !OPENAI_API_KEY:~0,8!...
-echo │ 模型名称:      !OPENAI_MODEL!
-echo │ 服务端口:      !PORT!
-echo └─────────────────────────────────────────────────┘
+echo Database Host:    !DB_HOST!
+echo Database Port:    !DB_PORT!
+echo Database Name:    !DB_NAME!
+echo Database User:    !DB_USER!
+echo Database Pass:    ********
+echo API Base URL:     !OPENAI_API_BASE!
+echo API Key:          !OPENAI_API_KEY:~0,8!...
+echo Model Name:       !OPENAI_MODEL!
+echo Service Port:     !PORT!
 echo.
 
-set /p CONFIRM="确认以上配置并开始部署? (y/n): "
+set /p CONFIRM="Confirm configuration and start deployment? (y/n): "
 if /i not "!CONFIRM!"=="y" (
-    echo [WARNING] 部署已取消
+    echo [WARNING] Deployment canceled
     pause
     exit /b 0
 )
 echo.
 
-:: ==================== 构建 Docker 镜像 ====================
+:: Build Docker Image
 echo ========================================
-echo Step 9: 构建 Docker 镜像
+echo Building Docker Image
 echo ========================================
 echo.
 
 set "CONTAINER_NAME=math-ocr-tool"
 set "IMAGE_NAME=math-ocr-tool:latest"
 
-echo [INFO] 正在构建 Docker 镜像...
-echo [INFO] 这可能需要几分钟时间，请耐心等待...
+echo [INFO] Building Docker image...
+echo [INFO] This may take a few minutes, please wait...
 echo.
 
 docker build -t "%IMAGE_NAME%" .
 
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Docker 镜像构建失败！
+    echo [ERROR] Docker image build failed!
     pause
     exit /b 1
 )
 
-echo [SUCCESS] Docker 镜像构建成功: %IMAGE_NAME%
+echo [SUCCESS] Docker image built: %IMAGE_NAME%
 echo.
 
-:: ==================== 清理旧容器 ====================
+:: Clean old container
 echo ========================================
-echo Step 10: 部署容器
+echo Deploying Container
 echo ========================================
 echo.
 
-echo [INFO] 检查并清理旧容器...
+echo [INFO] Checking and cleaning old container...
 
 docker ps -a --format "{{.Names}}" | findstr /C:"%CONTAINER_NAME%" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [INFO] 发现旧容器，正在停止并删除...
+    echo [INFO] Found old container, stopping and removing...
     docker stop %CONTAINER_NAME% >nul 2>&1
     docker rm %CONTAINER_NAME% >nul 2>&1
-    echo [SUCCESS] 旧容器已清理
+    echo [SUCCESS] Old container cleaned
 )
 
-:: ==================== 启动新容器 ====================
-echo [INFO] 正在启动新容器...
+:: Start new container
+echo [INFO] Starting new container...
 
 docker run -d ^
     --name "%CONTAINER_NAME%" ^
@@ -303,25 +275,25 @@ docker run -d ^
     "%IMAGE_NAME%"
 
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] 容器启动失败！
+    echo [ERROR] Container start failed!
     docker logs %CONTAINER_NAME%
     pause
     exit /b 1
 )
 
-echo [SUCCESS] 容器启动成功
+echo [SUCCESS] Container started
 echo.
 
-:: ==================== 健康检查 ====================
+:: Health Check
 echo ========================================
-echo Step 11: 健康检查
+echo Health Check
 echo ========================================
 echo.
 
-echo [INFO] 等待服务启动...
+echo [INFO] Waiting for service to start...
 timeout /t 5 /nobreak >nul
 
-echo [INFO] 检查服务状态...
+echo [INFO] Checking service status...
 
 set "RETRY_COUNT=0"
 set "MAX_RETRIES=12"
@@ -331,47 +303,38 @@ if !RETRY_COUNT! GEQ !MAX_RETRIES! goto health_check_timeout
 
 curl -s "http://localhost:!PORT!/health" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    echo [SUCCESS] 服务运行正常！
+    echo [SUCCESS] Service is running!
     goto health_check_done
 )
 
 set /a RETRY_COUNT+=1
-echo [INFO] 等待服务就绪... (!RETRY_COUNT!/!MAX_RETRIES!)
+echo [INFO] Waiting for service... (!RETRY_COUNT!/!MAX_RETRIES!)
 timeout /t 3 /nobreak >nul
 goto health_check_loop
 
 :health_check_timeout
-echo [WARNING] 服务可能仍在启动中，请稍后手动检查
+echo [WARNING] Service may still be starting, please check manually
 
 :health_check_done
 echo.
 
-:: ==================== 部署完成 ====================
+:: Deployment Complete
 echo ========================================
-echo 🎉 部署完成！
+echo Deployment Complete!
 echo ========================================
 echo.
-echo ╔════════════════════════════════════════════════════════════╗
-echo ║                                                            ║
-echo ║                    ✅ 部署成功！                           ║
-echo ║                                                            ║
-echo ╠════════════════════════════════════════════════════════════╣
-echo ║                                                            ║
-echo ║   🌐 访问地址: http://localhost:!PORT!                       ║
-echo ║                                                            ║
-echo ║   📂 安装目录: %INSTALL_DIR%
-echo ║                                                            ║
-echo ╚════════════════════════════════════════════════════════════╝
+echo   Access URL: http://localhost:!PORT!
+echo   Install Dir: %INSTALL_DIR%
 echo.
-echo 常用管理命令:
-echo   查看日志:      docker logs %CONTAINER_NAME%
-echo   实时日志:      docker logs -f %CONTAINER_NAME%
-echo   停止服务:      docker stop %CONTAINER_NAME%
-echo   启动服务:      docker start %CONTAINER_NAME%
-echo   重启服务:      docker restart %CONTAINER_NAME%
-echo   删除服务:      docker stop %CONTAINER_NAME% ^&^& docker rm %CONTAINER_NAME%
+echo Common Commands:
+echo   View logs:      docker logs %CONTAINER_NAME%
+echo   Live logs:      docker logs -f %CONTAINER_NAME%
+echo   Stop service:   docker stop %CONTAINER_NAME%
+echo   Start service:  docker start %CONTAINER_NAME%
+echo   Restart:        docker restart %CONTAINER_NAME%
+echo   Remove:         docker stop %CONTAINER_NAME% ^&^& docker rm %CONTAINER_NAME%
 echo.
-echo 感谢使用 Math OCR Tool！如有问题请访问 GitHub 提交 Issue。
+echo Thank you for using Math OCR Tool!
 echo.
 
 pause
