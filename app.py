@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, send_file
+from flask import Flask, request, render_template, jsonify, send_file, session, redirect, url_for, flash
 import os
 import base64
 import requests
@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import json
 from PIL import Image
 import io
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from docx import Document
 from docx.shared import Inches, Pt
@@ -15,26 +15,208 @@ from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import tempfile
 import re
+import psycopg2
+from functools import wraps
+import config  # 导入配置文件
+import bcrypt
 
 app = Flask(__name__)
+app.secret_key = config.SECRET_KEY
 
-# 从环境变量读取配置
-app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16777216))
-app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
+# Database Configuration
+DB_URI = config.DB_URI
+
+# 配置
+app.config['MAX_CONTENT_LENGTH'] = config.MAX_CONTENT_LENGTH
+app.config['UPLOAD_FOLDER'] = config.UPLOAD_FOLDER
 
 # 设置日志
-log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_level = config.LOG_LEVEL
 logging.basicConfig(level=getattr(logging, log_level))
 logger = logging.getLogger(__name__)
+
+# Usage Log File
+USAGE_LOG_FILE = config.USAGE_LOG_FILE
 
 # 创建上传目录
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # 转换次数统计文件
-STATS_FILE = 'conversion_stats.txt'
+STATS_FILE = config.STATS_FILE
 
 # 支持的图片格式
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+
+# --- Database & Auth Functions ---
+
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(DB_URI)
+        return conn
+    except Exception as e:
+        logger.error(f"Database connection error: {e}")
+        return None
+
+def check_login(email, password):
+    conn = get_db_connection()
+    if not conn:
+        return False, "数据库连接失败"
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT password, active FROM auth WHERE email = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return False, "用户不存在"
+        
+        db_password, active = user
+        
+        # 验证密码 (支持 bcrypt 哈希和明文)
+        password_valid = False
+        try:
+            # 检查是否为 bcrypt 哈希 (通常以 $2b$, $2a$, $2y$ 开头)
+            if db_password.startswith(('$2b$', '$2a$', '$2y$')):
+                if bcrypt.checkpw(password.encode('utf-8'), db_password.encode('utf-8')):
+                    password_valid = True
+            else:
+                # 明文匹配 (用于测试账户或旧数据)
+                if db_password == password:
+                    password_valid = True
+        except Exception as e:
+            logger.error(f"Password verification error: {e}")
+            # 出错时尝试明文匹配作为后备
+            if db_password == password:
+                password_valid = True
+
+        if not password_valid:
+            return False, "密码错误"
+        
+        if not active:
+            return False, "账户未激活"
+            
+        return True, "登录成功"
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return False, f"登录处理错误: {str(e)}"
+    finally:
+        if conn:
+            conn.close()
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --- Logging Functions ---
+
+def log_user_action(email, success):
+    try:
+        timestamp = datetime.now().isoformat()
+        status = "Success" if success else "Failed"
+        log_entry = f"{timestamp}|{email}|{status}\n"
+        
+        with open(USAGE_LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(log_entry)
+    except Exception as e:
+        logger.error(f"Failed to write usage log: {e}")
+
+def mask_email(email):
+    if not email or '@' not in email:
+        return email
+    try:
+        username, domain = email.split('@')
+        if len(username) <= 2:
+            masked_username = username[0] + "***"
+        else:
+            masked_username = username[:2] + "***" + username[-1]
+        return f"{masked_username}@{domain}"
+    except:
+        return email
+
+def get_display_logs():
+    if not os.path.exists(USAGE_LOG_FILE):
+        return []
+    
+    logs = []
+    try:
+        with open(USAGE_LOG_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Parse lines
+        parsed_logs = []
+        for line in lines:
+            try:
+                parts = line.strip().split('|')
+                if len(parts) >= 3:
+                    timestamp_str = parts[0]
+                    email = parts[1]
+                    status = parts[2]
+                    dt = datetime.fromisoformat(timestamp_str)
+                    parsed_logs.append({
+                        'dt': dt,
+                        'email': email,
+                        'status': status,
+                        'original_line': line
+                    })
+            except Exception as e:
+                continue
+        
+        # Sort by time descending
+        parsed_logs.sort(key=lambda x: x['dt'], reverse=True)
+        
+        # Merge logs
+        merged_logs = []
+        if not parsed_logs:
+            return []
+            
+        current_group = [parsed_logs[0]]
+        
+        for i in range(1, len(parsed_logs)):
+            log = parsed_logs[i]
+            prev = current_group[-1]
+            
+            # Check if same user and status within 30 minutes
+            time_diff = abs((prev['dt'] - log['dt']).total_seconds())
+            if log['email'] == prev['email'] and log['status'] == prev['status'] and time_diff <= 1800:
+                current_group.append(log)
+            else:
+                # Process current group -> take the latest one (which is the first in group due to sort)
+                latest_log = current_group[0]
+                count = len(current_group)
+                display_time = latest_log['dt'].strftime("%Y-%m-%d %H:%M:%S")
+                masked = mask_email(latest_log['email'])
+                
+                msg = f"用户 {masked} 在 {display_time} 使用转换功能 {'成功' if latest_log['status'] == 'Success' else '失败'}"
+                if count > 1:
+                    msg += f" (含近30分钟内 {count} 次记录)"
+                
+                merged_logs.append(msg)
+                current_group = [log]
+        
+        # Process last group
+        if current_group:
+            latest_log = current_group[0]
+            count = len(current_group)
+            display_time = latest_log['dt'].strftime("%Y-%m-%d %H:%M:%S")
+            masked = mask_email(latest_log['email'])
+            
+            msg = f"用户 {masked} 在 {display_time} 使用转换功能 {'成功' if latest_log['status'] == 'Success' else '失败'}"
+            if count > 1:
+                msg += f" (含近30分钟内 {count} 次记录)"
+            
+            merged_logs.append(msg)
+            
+        return merged_logs
+        
+    except Exception as e:
+        logger.error(f"Error reading logs: {e}")
+        return []
+
+# --- Existing Helper Functions ---
 
 def get_conversion_count():
     """获取转换次数"""
@@ -59,13 +241,13 @@ def increment_conversion_count():
 def get_api_config():
     """获取API配置"""
     return {
-        'api_key': os.getenv('OPENAI_API_KEY'),
-        'api_base': os.getenv('OPENAI_API_BASE', 'https://newapi2.zhizinan.top/v1'),
-        'model': os.getenv('OPENAI_MODEL', 'gpt-4o'),
-        'max_tokens': int(os.getenv('MODEL_MAX_TOKENS', 1000)),
-        'temperature': float(os.getenv('MODEL_TEMPERATURE', 0.1)),
-        'image_max_size': int(os.getenv('IMAGE_MAX_SIZE', 1024)),
-        'image_quality': int(os.getenv('IMAGE_QUALITY', 85))
+        'api_key': config.OPENAI_API_KEY,
+        'api_base': config.OPENAI_API_BASE,
+        'model': config.OPENAI_MODEL,
+        'max_tokens': config.MODEL_MAX_TOKENS,
+        'temperature': config.MODEL_TEMPERATURE,
+        'image_max_size': config.IMAGE_MAX_SIZE,
+        'image_quality': config.IMAGE_QUALITY
     }
 
 def allowed_file(filename):
@@ -118,11 +300,12 @@ def get_prompt_text():
 分数公式：$$\\frac{a + b}{c - d} = \\frac{\\sqrt{x}}{y^2}$$
 求和公式：$$\\sum_{i=1}^{n} x_i = \\frac{n(n+1)}{2}$$"""
 
-def call_ai_api(image_base64):
+def call_ai_api(image_base64, user_email=None):
     """调用AI API进行数学公式识别"""
     config = get_api_config()
     
     if not config['api_key']:
+        if user_email: log_user_action(user_email, False)
         return {"success": False, "error": "API密钥未配置"}
     
     headers = {
@@ -173,12 +356,14 @@ def call_ai_api(image_base64):
         if response.status_code != 200:
             error_text = response.text[:500] if response.text else "无响应内容"
             logger.error(f"API请求失败，状态码: {response.status_code}, 响应: {error_text}")
+            if user_email: log_user_action(user_email, False)
             return {"success": False, "error": f"API请求失败，状态码: {response.status_code}"}
         
         result = response.json()
         
         if 'choices' not in result or len(result['choices']) == 0:
             logger.error(f"API响应格式错误: {result}")
+            if user_email: log_user_action(user_email, False)
             return {"success": False, "error": "API响应格式错误，没有找到choices字段"}
         
         latex_code = result['choices'][0]['message']['content'].strip()
@@ -190,25 +375,12 @@ def call_ai_api(image_base64):
         count = increment_conversion_count()
         
         logger.info(f"API调用成功，返回LaTeX代码长度: {len(latex_code)}，总转换次数: {count}")
+        if user_email: log_user_action(user_email, True)
         return {"success": True, "latex": latex_code, "total_conversions": count}
     
-    except requests.exceptions.Timeout:
-        logger.error("API请求超时")
-        return {"success": False, "error": "请求超时，请重试"}
-    except requests.exceptions.ConnectionError:
-        logger.error("API连接失败")
-        return {"success": False, "error": "无法连接到API服务，请检查网络或API地址"}
-    except requests.exceptions.RequestException as e:
-        logger.error(f"API请求失败: {e}")
-        return {"success": False, "error": f"API请求失败: {str(e)}"}
-    except json.JSONDecodeError as e:
-        logger.error(f"API响应JSON解析失败: {e}")
-        return {"success": False, "error": "API响应格式错误，无法解析JSON"}
-    except KeyError as e:
-        logger.error(f"API响应格式错误，缺少字段: {e}")
-        return {"success": False, "error": f"API响应格式错误，缺少字段: {e}"}
     except Exception as e:
         logger.error(f"处理失败: {e}")
+        if user_email: log_user_action(user_email, False)
         return {"success": False, "error": f"处理失败: {str(e)}"}
 
 def clean_latex_output(latex_code):
@@ -248,35 +420,6 @@ def clean_latex_output(latex_code):
         cleaned_lines.append(line)
     
     return '\n'.join(cleaned_lines)
-
-def insert_math_equation(paragraph, latex_code):
-    """在Word段落中插入数学公式"""
-    try:
-        # 清理LaTeX代码
-        clean_formula = latex_code.strip()
-        if clean_formula.startswith('$$') and clean_formula.endswith('$$'):
-            clean_formula = clean_formula[2:-2]
-        elif clean_formula.startswith('$') and clean_formula.endswith('$'):
-            clean_formula = clean_formula[1:-1]
-        
-        # 创建数学公式XML
-        math_xml = f'''
-        <m:oMathPara xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">
-            <m:oMath>
-                <m:r>
-                    <m:t>{clean_formula}</m:t>
-                </m:r>
-            </m:oMath>
-        </m:oMathPara>
-        '''
-        
-        # 插入数学公式
-        paragraph._p.append(OxmlElement(math_xml))
-        return True
-        
-    except Exception as e:
-        logger.error(f"插入数学公式失败: {e}")
-        return False
 
 def create_word_document_with_formula(latex_code):
     """创建包含数学公式的Word文档"""
@@ -420,12 +563,37 @@ def create_word_document_with_formula(latex_code):
         logger.error(f"创建Word文档失败: {e}")
         raise e
 
+# --- Routes ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        success, message = check_login(email, password)
+        if success:
+            session['user_email'] = email
+            return redirect(url_for('index'))
+        else:
+            flash(message)
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_email', None)
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     count = get_conversion_count()
-    return render_template('index.html', total_conversions=count)
+    logs = get_display_logs()
+    return render_template('index.html', total_conversions=count, usage_logs=logs, user_email=session.get('user_email'))
 
 @app.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': '没有上传文件'})
@@ -446,7 +614,7 @@ def upload_file():
                 image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
             
             # 调用API
-            result = call_ai_api(image_base64)
+            result = call_ai_api(image_base64, user_email=session.get('user_email'))
             
             # 删除临时文件
             os.remove(filepath)
@@ -455,11 +623,14 @@ def upload_file():
             
         except Exception as e:
             logger.error(f"文件处理错误: {e}")
+            if 'user_email' in session:
+                log_user_action(session['user_email'], False)
             return jsonify({'success': False, 'error': f'处理文件时出错: {str(e)}'})
     
     return jsonify({'success': False, 'error': '不支持的文件格式'})
 
 @app.route('/upload_base64', methods=['POST'])
+@login_required
 def upload_base64():
     """处理粘贴的图片数据"""
     try:
@@ -472,15 +643,18 @@ def upload_base64():
         logger.info("接收到图片数据，开始转换")
         
         # 调用API
-        result = call_ai_api(image_data)
+        result = call_ai_api(image_data, user_email=session.get('user_email'))
         
         return jsonify(result)
         
     except Exception as e:
         logger.error(f"Base64处理错误: {e}")
+        if 'user_email' in session:
+            log_user_action(session['user_email'], False)
         return jsonify({'success': False, 'error': f'处理数据时出错: {str(e)}'})
 
 @app.route('/download_word', methods=['POST'])
+@login_required
 def download_word():
     """生成并下载包含公式的Word文档"""
     try:
@@ -544,93 +718,14 @@ def health_check():
             'status': 'healthy', 
             'timestamp': datetime.now().isoformat(),
             'version': '1.0.0',
-            'uptime': 'running',
-            'total_conversions': get_conversion_count(),
-            'config': {
-                'api_base': config['api_base'],
-                'model': config['model'],
-                'max_tokens': config['max_tokens'],
-                'temperature': config['temperature'],
-                'image_max_size': config['image_max_size'],
-                'image_quality': config['image_quality'],
-                'api_key_configured': bool(config['api_key'])
-            }
+            'api_configured': bool(config['api_key'])
         })
     except Exception as e:
-        logger.error(f"健康检查失败: {e}")
         return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            'status': 'unhealthy',
+            'error': str(e)
         }), 500
 
-@app.route('/test-api')
-def test_api():
-    """测试API连接"""
-    try:
-        config = get_api_config()
-        
-        if not config['api_key']:
-            return jsonify({'success': False, 'error': 'API密钥未配置'})
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {config['api_key']}"
-        }
-        
-        # 简单的测试请求
-        payload = {
-            "model": config['model'],
-            "messages": [{"role": "user", "content": "测试连接，请回复'连接成功'"}],
-            "max_tokens": 10,
-            "temperature": 0
-        }
-        
-        response = requests.post(
-            f"{config['api_base']}/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-        
-        return jsonify({
-            'success': response.status_code == 200,
-            'status_code': response.status_code,
-            'api_base': config['api_base'],
-            'model': config['model'],
-            'response_text': response.text[:200] if response.text else None,
-            'config': {
-                'max_tokens': config['max_tokens'],
-                'temperature': config['temperature']
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'config': get_api_config()
-        })
-
-@app.route('/config')
-def get_config():
-    """获取当前配置信息（用于调试）"""
-    config = get_api_config()
-    # 隐藏敏感信息
-    safe_config = config.copy()
-    if safe_config['api_key']:
-        safe_config['api_key'] = safe_config['api_key'][:10] + "..." + safe_config['api_key'][-4:]
-    
-    return jsonify({
-        'config': safe_config,
-        'total_conversions': get_conversion_count(),
-        'env_vars': {
-            'FLASK_ENV': os.getenv('FLASK_ENV'),
-            'LOG_LEVEL': os.getenv('LOG_LEVEL'),
-            'UPLOAD_FOLDER': os.getenv('UPLOAD_FOLDER'),
-            'MAX_CONTENT_LENGTH': os.getenv('MAX_CONTENT_LENGTH')
-        }
-    })
-
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)

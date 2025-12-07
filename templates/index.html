@@ -10,9 +10,14 @@
 <body>
     <div class="container">
         <header>
+            {% if user_email %}
+            <div class="user-info">
+                欢迎, {{ user_email }} <a href="{{ url_for('logout') }}">退出</a>
+            </div>
+            {% endif %}
             <div class="logo-section">
                 <a href="/" class="logo-link">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3771/3771275.png" alt="数学公式转换器" class="logo-img">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="数学公式转换器" class="logo-img">
                 </a>
                 <div class="title-section">
                     <h1>数学公式图片转LaTeX</h1>
@@ -106,6 +111,22 @@
 
             <!-- 错误消息 -->
             <div class="error-message" id="errorMessage" style="display: none;"></div>
+            
+            <!-- 日志记录显示 -->
+            <div class="logs-section">
+                <h3>📊 最近使用记录</h3>
+                <div class="logs-container">
+                    {% if usage_logs %}
+                        <ul class="logs-list">
+                            {% for log in usage_logs %}
+                                <li>{{ log }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p style="text-align: center; color: #999;">暂无使用记录</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- 页脚 -->

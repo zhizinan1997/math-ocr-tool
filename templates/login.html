@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 数学公式图片转LaTeX</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 420px;
+        }
+
+        .login-header {
+            text-align: center;
+            padding: 32px 28px 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .login-header .logo-img {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+        }
+
+        .login-header h1 {
+            font-size: 1.4rem;
+            color: var(--gray-900);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+
+        .login-form {
+            padding: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: 0.88rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all var(--transition-fast);
+            background: var(--white);
+            color: var(--gray-800);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gray-500);
+            box-shadow: 0 0 0 3px rgba(73, 80, 87, 0.08);
+        }
+
+        .form-group input::placeholder {
+            color: var(--gray-400);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: var(--gray-800);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-family: inherit;
+        }
+
+        .btn-login:hover {
+            background: var(--gray-900);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            background: #fff5f5;
+            color: #e03131;
+            border: 1px solid #ffc9c9;
+            font-size: 0.88rem;
+        }
+
+        .login-footer {
+            text-align: center;
+            padding: 16px;
+            background: var(--gray-50);
+            border-top: 1px solid var(--gray-200);
+            font-size: 0.82rem;
+            color: var(--gray-500);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo-img">
+            <h1>用户登录</h1>
+            <p>请先登录以使用服务</p>
+        </div>
+
+        <div class="login-form">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input type="email" id="email" name="email" required placeholder="请输入您的邮箱">
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required placeholder="请输入密码">
+                </div>
+                <button type="submit" class="btn-login">登录</button>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            Powered by Ryan • Math OCR Tool
+        </div>
+    </div>
+</body>
+
+</html>

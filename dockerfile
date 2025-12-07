@@ -1,35 +1,21 @@
-FROM python:3.11-slim
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim-buster
 
-# 设置工作目录
+# Set the working directory in the container
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libxml2-dev \
-    libxslt-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# 复制依赖文件
-COPY requirements.txt .
-
-# 安装Python依赖
+# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
-COPY . .
-
-# 创建上传目录
-RUN mkdir -p uploads
-
-# 设置环境变量
-ENV FLASK_APP=app.py
-ENV FLASK_ENV=production
-ENV PYTHONPATH=/app
-
-# 暴露端口
+# Expose the port that the Flask app will run on
 EXPOSE 5000
 
-# 启动命令
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
+# Define environment variables
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+# Run the application
+CMD ["flask", "run"]

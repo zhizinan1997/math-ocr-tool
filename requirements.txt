@@ -6,3 +6,5 @@ python-dotenv==1.0.0
 gunicorn==21.2.0
 python-docx==0.8.11
 lxml==4.9.3
+psycopg2-binary==2.9.9
+bcrypt==4.0.1
