@@ -23,7 +23,9 @@
 | 🎯 **高识别准确率** | 支持复杂公式：分数、积分、矩阵、求和等 |
 | 🔍 **实时预览** | MathJax 实时渲染 LaTeX 公式预览 |
 | 📋 **一键复制** | 快速复制生成的 LaTeX 代码到剪贴板 |
-| 🔐 **用户认证** | 邮箱登录，保护服务资源 |
+| 🔐 **用户认证** | 双表验证（auth + user），支持账户激活状态管理 |
+| 👤 **角色管理** | 支持 admin、user、pending 三种角色状态 |
+| 📝 **历史记录** | 自动保存用户上传的图片和AI识别结果，便于管理 |
 | 🐳 **Docker部署** | 一键脚本，快速部署到任何服务器 |
 
 ---
@@ -120,20 +122,67 @@ docker-compose up -d
 
 ### 数据库准备
 
-需要在 PostgreSQL 中创建 `auth` 表：
+本工具使用两个数据表进行用户认证和权限管理：
+
+#### 1. `auth` 表 - 存储登录凭证
 
 ```sql
 CREATE TABLE auth (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 创建测试用户 (密码建议使用 bcrypt 哈希)
-INSERT INTO auth (email, password, active) VALUES ('test@example.com', 'your-password', true);
+-- 创建用户 (密码建议使用 bcrypt 哈希)
+INSERT INTO auth (email, password) VALUES ('admin@example.com', 'your-hashed-password');
 ```
+
+#### 2. `user` 表 - 存储用户角色和激活状态
+
+```sql
+CREATE TABLE "user" (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 设置用户角色
+-- role 可选值: 'admin', 'user', 'pending'
+-- 'pending' = 待审核（无法登录）
+-- 'user' = 普通用户（可登录）
+-- 'admin' = 管理员（可登录）
+INSERT INTO "user" (email, role) VALUES ('admin@example.com', 'admin');
+```
+
+### 用户认证流程
+
+登录验证按以下顺序进行：
+
+1. ❌ 邮箱在 `auth` 表不存在 → "用户不存在"
+2. ❌ 密码错误 → "密码错误"
+3. ❌ 邮箱在 `user` 表不存在 → "用户信息不完整，请联系管理员"
+4. ❌ `user` 表中 role = "pending" → "账户未激活，请等待管理员审核"
+5. ✅ role = "admin" 或 "user" → 登录成功
+
+### 用户管理
+
+管理员可以通过修改 `user` 表的 `role` 列来管理用户权限：
+
+```sql
+-- 激活用户
+UPDATE "user" SET role = 'user' WHERE email = 'newuser@example.com';
+
+-- 禁用用户（设为待审核状态，会立即踢出已登录用户）
+UPDATE "user" SET role = 'pending' WHERE email = 'banned@example.com';
+
+-- 删除用户（从两个表中删除，会立即踢出已登录用户）
+DELETE FROM auth WHERE email = 'deleted@example.com';
+DELETE FROM "user" WHERE email = 'deleted@example.com';
+```
+
+> ⚠️ **注意**: 当用户被删除或设为 pending 状态时，该用户会在下次访问任何页面时被立即踢出登录。
 
 ### 从源码构建
 
@@ -178,6 +227,7 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
 | `MODEL_TEMPERATURE` | `0.1` | 模型温度 (0-1) |
 | `IMAGE_MAX_SIZE` | `1024` | 图片最大尺寸 (px) |
 | `IMAGE_QUALITY` | `85` | 图片压缩质量 (1-100) |
+| `USER_HISTORY_FOLDER` | `user_history` | 用户历史记录保存目录 |
 | `LOG_LEVEL` | `INFO` | 日志级别 |
 
 ### 支持的 AI 服务
@@ -213,14 +263,50 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
 
 ---
 
-## 🔧 故障排除
+## � 用户历史记录
+
+系统会自动保存每个用户的上传记录，方便管理员审计和管理。
+
+### 目录结构
+
+```
+user_history/
+├── john_at_example_com/
+│   ├── 20251208_143000_123456/
+│   │   ├── image.png          # 用户上传的原始图片
+│   │   ├── result.txt         # AI返回的LaTeX代码
+│   │   └── metadata.json      # 元数据（时间、状态等）
+│   └── 20251208_144530_789012/
+│       └── ...
+└── jane_at_test_com/
+    └── ...
+```
+
+### 元数据示例 (metadata.json)
+
+```json
+{
+  "email": "john@example.com",
+  "timestamp": "2025-12-08T14:30:00.123456",
+  "success": true,
+  "latex_length": 156
+}
+```
+
+---
+
+## �🔧 故障排除
 
 | 问题 | 解决方案 |
 |------|----------|
 | 容器启动失败 | 检查环境变量是否正确配置 |
 | 数据库连接失败 | 确认数据库地址、端口、密码正确 |
 | API 调用失败 | 检查 API 密钥是否有效，模型是否支持图像 |
-| 登录失败 | 确认数据库中存在对应用户且 `active=true` |
+| "用户不存在" | 确认邮箱在 `auth` 表中存在 |
+| "密码错误" | 确认密码正确（支持明文或 bcrypt 哈希） |
+| "账户未激活" | 管理员需在 `user` 表中将 role 改为 'user' 或 'admin' |
+| "用户信息不完整" | 需要在 `user` 表中添加对应邮箱的记录 |
+| 被踢出登录 | 账户可能已被删除或设为 pending 状态 |
 
 查看容器日志：
 ```bash
@@ -231,12 +317,16 @@ docker logs math-ocr-tool
 
 ## 📊 API 接口
 
-| 接口 | 方法 | 描述 |
-|------|------|------|
-| `/health` | GET | 健康检查 |
-| `/stats` | GET | 获取转换统计 |
-| `/upload` | POST | 上传图片文件 |
-| `/upload_base64` | POST | 上传 Base64 图片 |
+| 接口 | 方法 | 描述 | 认证 |
+|------|------|------|------|
+| `/health` | GET | 健康检查 | 否 |
+| `/stats` | GET | 获取转换统计 | 否 |
+| `/login` | GET/POST | 用户登录 | 否 |
+| `/logout` | GET | 用户登出 | 否 |
+| `/` | GET | 主页 | 需要登录 |
+| `/upload` | POST | 上传图片文件 | 需要登录 |
+| `/upload_base64` | POST | 上传 Base64 图片 | 需要登录 |
+| `/download_word` | POST | 下载 Word 文档 | 需要登录 |
 
 ---
 
@@ -282,7 +372,18 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
 - 📸 Multiple upload methods (drag & drop, click, paste)
 - 🔍 Real-time LaTeX preview with MathJax
 - 📋 One-click copy to clipboard
+- 🔐 User authentication with role-based access control
+- 📝 User history logging for admin management
 - 🐳 Docker deployment ready
+
+### Database Setup
+
+This tool requires two tables for authentication:
+
+1. **`auth` table** - Stores login credentials (email, password)
+2. **`user` table** - Stores user roles (admin, user, pending)
+
+Users with `role = 'pending'` cannot log in until an admin changes their role.
 
 ### Configuration
 
@@ -293,6 +394,7 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
 | `OPENAI_API_KEY` | Yes | AI API key |
 | `OPENAI_API_BASE` | No | API base URL (default: OpenAI) |
 | `OPENAI_MODEL` | No | Model name (default: gpt-4o) |
+| `USER_HISTORY_FOLDER` | No | User history folder (default: user_history) |
 
 ---
 

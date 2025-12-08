@@ -38,8 +38,14 @@ logger = logging.getLogger(__name__)
 # Usage Log File
 USAGE_LOG_FILE = config.USAGE_LOG_FILE
 
+# 用户历史记录目录
+USER_HISTORY_FOLDER = config.USER_HISTORY_FOLDER
+
 # 创建上传目录
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# 创建用户历史记录目录
+os.makedirs(USER_HISTORY_FOLDER, exist_ok=True)
 
 # 转换次数统计文件
 STATS_FILE = config.STATS_FILE
@@ -64,13 +70,15 @@ def check_login(email, password):
     
     try:
         cur = conn.cursor()
-        cur.execute("SELECT password, active FROM auth WHERE email = %s", (email,))
-        user = cur.fetchone()
         
-        if not user:
+        # 首先从 auth 表检查用户是否存在并获取密码
+        cur.execute("SELECT password FROM auth WHERE email = %s", (email,))
+        auth_user = cur.fetchone()
+        
+        if not auth_user:
             return False, "用户不存在"
         
-        db_password, active = user
+        db_password = auth_user[0]
         
         # 验证密码 (支持 bcrypt 哈希和明文)
         password_valid = False
@@ -92,8 +100,18 @@ def check_login(email, password):
         if not password_valid:
             return False, "密码错误"
         
-        if not active:
-            return False, "账户未激活"
+        # 从 user 表检查账户激活状态 (role 列)
+        # pending = 未激活, admin/user = 已激活
+        cur.execute("SELECT role FROM \"user\" WHERE email = %s", (email,))
+        user_info = cur.fetchone()
+        
+        if not user_info:
+            return False, "用户信息不完整，请联系管理员"
+        
+        role = user_info[0]
+        
+        if role == "pending":
+            return False, "账户未激活，请等待管理员审核"
             
         return True, "登录成功"
     except Exception as e:
@@ -108,6 +126,54 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_email' not in session:
             return redirect(url_for('login'))
+        
+        # 验证用户是否仍然存在于数据库中且账户已激活
+        user_email = session['user_email']
+        conn = get_db_connection()
+        if not conn:
+            # 数据库连接失败，清除会话并跳转登录
+            session.clear()
+            flash("数据库连接失败，请重新登录")
+            return redirect(url_for('login'))
+        
+        try:
+            cur = conn.cursor()
+            # 检查用户是否存在于 auth 表
+            cur.execute("SELECT email FROM auth WHERE email = %s", (user_email,))
+            auth_exists = cur.fetchone()
+            
+            if not auth_exists:
+                # 用户已被删除，清除会话
+                session.clear()
+                flash("您的账户已被删除，请联系管理员")
+                return redirect(url_for('login'))
+            
+            # 检查用户在 user 表中的角色状态
+            cur.execute("SELECT role FROM \"user\" WHERE email = %s", (user_email,))
+            user_info = cur.fetchone()
+            
+            if not user_info:
+                # 用户信息不完整
+                session.clear()
+                flash("用户信息不完整，请联系管理员")
+                return redirect(url_for('login'))
+            
+            role = user_info[0]
+            if role == "pending":
+                # 账户已被设为待审核状态
+                session.clear()
+                flash("您的账户已被设为待审核状态，请联系管理员")
+                return redirect(url_for('login'))
+                
+        except Exception as e:
+            logger.error(f"Session validation error: {e}")
+            session.clear()
+            flash("会话验证失败，请重新登录")
+            return redirect(url_for('login'))
+        finally:
+            if conn:
+                conn.close()
+        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -123,6 +189,62 @@ def log_user_action(email, success):
             f.write(log_entry)
     except Exception as e:
         logger.error(f"Failed to write usage log: {e}")
+
+def save_user_history(email, image_base64, latex_result, success):
+    """
+    保存用户历史记录：上传的图片和AI返回的结果
+    目录结构: user_history/{用户邮箱}/{时间戳}/
+        - image.png (上传的图片)
+        - result.txt (AI返回的LaTeX代码或错误信息)
+        - metadata.json (元数据)
+    """
+    try:
+        # 使用邮箱前缀作为文件夹名（处理特殊字符）
+        safe_email = email.replace('@', '_at_').replace('.', '_')
+        
+        # 创建时间戳文件夹
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        
+        # 创建用户目录和时间戳子目录
+        user_folder = os.path.join(USER_HISTORY_FOLDER, safe_email)
+        history_folder = os.path.join(user_folder, timestamp)
+        os.makedirs(history_folder, exist_ok=True)
+        
+        # 保存图片
+        try:
+            # 处理 base64 数据 (可能包含 data:image/xxx;base64, 前缀)
+            if ',' in image_base64:
+                image_data = image_base64.split(',')[1]
+            else:
+                image_data = image_base64
+            
+            image_bytes = base64.b64decode(image_data)
+            image_path = os.path.join(history_folder, "image.png")
+            with open(image_path, 'wb') as f:
+                f.write(image_bytes)
+        except Exception as e:
+            logger.error(f"Failed to save image for user {email}: {e}")
+        
+        # 保存结果
+        result_path = os.path.join(history_folder, "result.txt")
+        with open(result_path, 'w', encoding='utf-8') as f:
+            f.write(latex_result if latex_result else "无结果")
+        
+        # 保存元数据
+        metadata = {
+            "email": email,
+            "timestamp": datetime.now().isoformat(),
+            "success": success,
+            "latex_length": len(latex_result) if latex_result else 0
+        }
+        metadata_path = os.path.join(history_folder, "metadata.json")
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        
+        logger.info(f"Saved user history for {email} at {history_folder}")
+        
+    except Exception as e:
+        logger.error(f"Failed to save user history for {email}: {e}")
 
 def mask_email(email):
     if not email or '@' not in email:
@@ -616,6 +738,12 @@ def upload_file():
             # 调用API
             result = call_ai_api(image_base64, user_email=session.get('user_email'))
             
+            # 保存用户历史记录
+            user_email = session.get('user_email')
+            if user_email:
+                latex_result = result.get('latex', result.get('error', '')) if result else ''
+                save_user_history(user_email, image_base64, latex_result, result.get('success', False))
+            
             # 删除临时文件
             os.remove(filepath)
             
@@ -644,6 +772,12 @@ def upload_base64():
         
         # 调用API
         result = call_ai_api(image_data, user_email=session.get('user_email'))
+        
+        # 保存用户历史记录
+        user_email = session.get('user_email')
+        if user_email:
+            latex_result = result.get('latex', result.get('error', '')) if result else ''
+            save_user_history(user_email, image_data, latex_result, result.get('success', False))
         
         return jsonify(result)
         

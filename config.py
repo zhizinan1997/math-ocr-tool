@@ -44,3 +44,6 @@ UPLOAD_FOLDER = 'uploads'
 USAGE_LOG_FILE = 'usage.log'
 STATS_FILE = 'conversion_stats.txt'
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
+
+# 用户历史记录文件夹 (保存用户上传的图片和AI返回的代码)
+USER_HISTORY_FOLDER = os.getenv('USER_HISTORY_FOLDER', 'user_history')
