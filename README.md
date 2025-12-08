@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/ryanzhi1997/math-ocr-tool.svg)](https://hub.docker.com/r/ryanzhi1997/math-ocr-tool)
+[![GHCR](https://img.shields.io/badge/GHCR-ghcr.io%2Fzhizinan1997%2Fmath--ocr--tool-blue)](https://github.com/zhizinan1997/math-ocr-tool/pkgs/container/math-ocr-tool)
 [![GitHub Stars](https://img.shields.io/github/stars/zhizinan1997/math-ocr-tool.svg)](https://github.com/zhizinan1997/math-ocr-tool/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -66,7 +66,7 @@ docker run -d \
     -e OPENAI_API_BASE="https://api.openai.com/v1" \
     -e OPENAI_MODEL="gpt-4o" \
     --restart unless-stopped \
-    ryanzhi1997/math-ocr-tool:v0.0.2
+    ghcr.io/zhizinan1997/math-ocr-tool:latest
 ```
 
 ### 方式三：Docker Compose
@@ -78,7 +78,7 @@ version: '3.8'
 
 services:
   math-ocr-tool:
-    image: ryanzhi1997/math-ocr-tool:v0.0.2
+    image: ghcr.io/zhizinan1997/math-ocr-tool:latest
     container_name: math-ocr-tool
     ports:
       - "5000:5000"
@@ -363,7 +363,7 @@ docker run -d --name math-ocr-tool -p 5000:5000 \
     -e DB_HOST="your-db-host" \
     -e DB_PASSWORD="your-db-password" \
     -e OPENAI_API_KEY="your-api-key" \
-    ryanzhi1997/math-ocr-tool:v0.0.2
+    ghcr.io/zhizinan1997/math-ocr-tool:latest
 ```
 
 ### Features
